@@ -4,6 +4,9 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from .serializers import ReviewSerializer, BookingSerializer, ListingSerializer, PaymentSerializer
 from .models import Listing, Booking, Review, Payment
+from .tasks import send_booking_confirmation_email
+import os
+import requests
 
 # Create your views here.
 
@@ -22,6 +25,9 @@ class BookingViewset(viewsets.ModelViewSet):
         booking = Booking.objects.get(id=booking_id)
         amount = booking.price  # Adjust field name if needed
         user_email = booking.user.email
+        
+        # 2. Trigger email asynchronously
+        send_booking_confirmation_email.delay(user_email, booking_id)
         # Initiate payment
         payload = {
             "amount": str(amount),
@@ -52,11 +58,7 @@ class ReviewViewset(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
 
 
-import os
-import requests
-from rest_framework.decorators import action
-from .models import Payment
-from .serializers import PaymentSerializer
+
 
 CHAPA_BASE_URL = "https://api.chapa.co/v1/transaction/initialize"
 CHAPA_VERIFY_URL = "https://api.chapa.co/v1/transaction/verify/"
