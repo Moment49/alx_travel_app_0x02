@@ -25,9 +25,10 @@ class BookingViewset(viewsets.ModelViewSet):
         booking = Booking.objects.get(id=booking_id)
         amount = booking.price  # Adjust field name if needed
         user_email = booking.user.email
-        
+
         # 2. Trigger email asynchronously
         send_booking_confirmation_email.delay(user_email, booking_id)
+        
         # Initiate payment
         payload = {
             "amount": str(amount),
